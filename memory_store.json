@@ -1,1 +1,122 @@
-[]
+[
+  {
+    "namespace": [
+      "memories"
+    ],
+    "key": "6e600eeb-6294-4a1a-a5df-d707012df658",
+    "value": {
+      "kind": "Memory",
+      "content": {
+        "content": "User requested information of Dipak Madhu who has applied to BANGLA RYUBA SATHI SCHEME, including his phone number and bank details. Assistant informed that no specific information about Dipak Madhu was found in the provided documents and asked for more context or relevant documents."
+      }
+    }
+  },
+  {
+    "namespace": [
+      "memories"
+    ],
+    "key": "515e7185-3289-454e-aaf8-6839fb99a746",
+    "value": {
+      "kind": "Memory",
+      "content": {
+        "content": "User requested information of Dipak Madhu who has applied to BANGLA RYUBA SATHI SCHEME, including his phone number and bank details. Assistant informed that no specific information about Dipak Madhu was found in the provided documents and asked for more context or relevant documents."
+      }
+    }
+  },
+  {
+    "namespace": [
+      "memories"
+    ],
+    "key": "8b42ce79-aa82-4a25-8bb3-8c813a1844c1",
+    "value": {
+      "kind": "Memory",
+      "content": {
+        "content": "User preference: The assistant should gather information of Dipak Madhu who has applied to BANGLA RYUBA SATHI SCHEME, including his phone number and bank details. Assistant informed that no specific information about Dipak Madhu was found in the provided documents and asked for more context or relevant documents."
+      }
+    }
+  },
+  {
+    "namespace": [
+      "memories"
+    ],
+    "key": "cf19fc5a-3f30-49a4-8f75-cedbb26d8d64",
+    "value": {
+      "kind": "Memory",
+      "content": {
+        "content": "User requested assistant to provide information of Dipak Madhu who has applied to BANGLA RYUBA SATHI SCHEME, including his phone number and bank details. Assistant informed that no specific information about Dipak Madhu was found in the provided documents and asked for more context or relevant documents."
+      }
+    }
+  },
+  {
+    "namespace": [
+      "memories"
+    ],
+    "key": "6fa1ff8a-2200-46b1-9f15-e0c0db4d9957",
+    "value": {
+      "kind": "Memory",
+      "content": {
+        "content": "The assistant has been informed that the document has already been uploaded. However, the assistant still needs to gather information such as Dipak Madhu's phone number and bank account details from the uploaded document."
+      }
+    }
+  },
+  {
+    "namespace": [
+      "memories"
+    ],
+    "key": "496643b1-d9ac-4346-8110-28fc29a26c73",
+    "value": {
+      "kind": "Memory",
+      "content": {
+        "content": "User informed that the document containing Dipak Madhu's application for the BANGLA RYUBA SATHI SCHEME has already been uploaded. The assistant is now waiting to gather information such as his phone number and bank account details from the uploaded document."
+      }
+    }
+  },
+  {
+    "namespace": [
+      "memories"
+    ],
+    "key": "bc767794-0900-43ca-bbf7-187376af118d",
+    "value": {
+      "kind": "Memory",
+      "content": {
+        "content": "User requested information of Dipak Madhu who has applied to BANGLA RYUBA SATHI SCHEME, including his phone number and bank details. Assistant informed that no specific information about Dipak Madhu was found in the provided documents and asked for more context or relevant documents."
+      }
+    }
+  },
+  {
+    "namespace": [
+      "memories"
+    ],
+    "key": "9fbd7eed-4e4a-4b63-8a99-748cf9459dc3",
+    "value": {
+      "kind": "Memory",
+      "content": {
+        "content": "\n\nUser thanked the assistant for help and said they would contact again if needed. Assistant responded politely, ending the conversation."
+      }
+    }
+  },
+  {
+    "namespace": [
+      "memories"
+    ],
+    "key": "dd1defea-7232-4381-974e-e1024e0dae9e",
+    "value": {
+      "kind": "Memory",
+      "content": {
+        "content": "User requested to gather detailed information of Dipak Madhu who has applied to BANGLA RYUBA SATHI SCHEME, including his phone number and bank details. Assistant informed that no specific information about Dipak Madhu was found in the provided documents and asked for more context or relevant documents."
+      }
+    }
+  },
+  {
+    "namespace": [
+      "memories"
+    ],
+    "key": "29da9e6d-cf1a-4080-880a-1891217ec2ce",
+    "value": {
+      "kind": "Memory",
+      "content": {
+        "content": "User thanked the assistant for help and said they would contact again if needed. Assistant responded politely, ending the conversation."
+      }
+    }
+  }
+]
