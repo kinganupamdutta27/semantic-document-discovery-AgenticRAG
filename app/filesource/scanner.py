@@ -138,7 +138,7 @@ async def _scan_local_path(src: FileSourceConfig) -> Dict[str, Any]:
     """Directly scan a locally-accessible path — zero file copying."""
     from app.utils.document_converstion import process_file
     from app.vectorstore.operations import add_documents
-    from app.vectorstore.vectorstore import save_vectorstore, vector_store
+    from app.vectorstore.vectorstore import vsm, save_vectorstore
 
     base = Path(src.base_path)
     new_files = 0
@@ -175,8 +175,9 @@ async def _scan_local_path(src: FileSourceConfig) -> Dict[str, Any]:
                 logger.error("[SCANNER] Error processing %s: %s", fname, exc)
 
     if chunks_added > 0:
-        save_vectorstore(vector_store)
-        logger.info("[SCANNER] Vectorstore saved (%d chunks total)", vector_store.index.ntotal)
+        save_vectorstore()
+        active = vsm.active
+        logger.info("[SCANNER] Vectorstore saved (%d chunks total)", active.index.ntotal if active else 0)
 
     msg = f"Scan complete: {new_files} new, {skipped} skipped, {chunks_added} chunks"
     if errors:
@@ -203,7 +204,7 @@ async def _scan_remote_via_temp(src: FileSourceConfig) -> Dict[str, Any]:
     """
     from app.utils.document_converstion import process_file
     from app.vectorstore.operations import add_documents
-    from app.vectorstore.vectorstore import save_vectorstore, vector_store
+    from app.vectorstore.vectorstore import vsm, save_vectorstore
 
     adapter_cfg = _build_config(src)
 
@@ -253,8 +254,9 @@ async def _scan_remote_via_temp(src: FileSourceConfig) -> Dict[str, Any]:
             return _result(False, src.id, src.name, f"Remote scan failed: {exc}", errors=errors)
 
     if chunks_added > 0:
-        save_vectorstore(vector_store)
-        logger.info("[SCANNER] Vectorstore saved (%d chunks total)", vector_store.index.ntotal)
+        save_vectorstore()
+        active = vsm.active
+        logger.info("[SCANNER] Vectorstore saved (%d chunks total)", active.index.ntotal if active else 0)
 
     msg = f"Scan complete: {new_files} new, {skipped} skipped, {chunks_added} chunks"
     if errors:
@@ -283,6 +285,14 @@ async def _auto_scan_all_enabled():
     Runs on the same APScheduler and interval as the BASE_DATA_FOLDER
     sync so that one interval governs all scanning.
     """
+    from app.vectorstore.vectorstore import vsm as _vsm
+    if _vsm.rag_blocked:
+        logger.info("[SCANNER] Auto-scan skipped — vector store rebuild in progress")
+        return
+    if _vsm.active is None:
+        logger.info("[SCANNER] Auto-scan skipped — no active vector store (rebuild required)")
+        return
+
     session = get_fs_session()
     try:
         sources = session.exec(

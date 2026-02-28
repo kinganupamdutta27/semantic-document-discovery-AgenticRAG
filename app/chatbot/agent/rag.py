@@ -44,7 +44,7 @@ from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.graph.message import RemoveMessage
 from langgraph.prebuilt import ToolNode
 
-from app.chatbot.agent.llm import model
+from app.chatbot.agent.llm import get_model
 from app.chatbot.agent.memory import recall_memories
 from app.chatbot.agent.tools import retrieve_documents
 from app.chatbot.config.prompts import get_prompt
@@ -96,10 +96,10 @@ async def chat_node(state: AgenticRAGState) -> dict:
         system_content += "\n\n" + memories
 
     system_msg = SystemMessage(content=system_content)
-    messages = [system_msg] + list(state["messages"])
+    messages = _sanitize_messages([system_msg] + list(state["messages"]))
 
     try:
-        response = await model.ainvoke(messages)
+        response = await get_model().ainvoke(messages)
     except Exception as exc:
         logger.error("LLM invocation failed in chat_node: %s", exc, exc_info=True)
         raise LLMConnectionError(f"LLM invocation failed: {exc}") from exc
@@ -125,10 +125,10 @@ async def rag_chat_node(state: AgenticRAGState) -> dict:
         system_content += "\n\n" + memories
 
     system_msg = SystemMessage(content=system_content)
-    messages = [system_msg] + list(state["messages"])
+    messages = _sanitize_messages([system_msg] + list(state["messages"]))
 
     try:
-        response = await model.bind_tools(_tools).ainvoke(messages)
+        response = await get_model().bind_tools(_tools).ainvoke(messages)
     except Exception as exc:
         logger.error("LLM invocation failed in rag_chat_node: %s", exc, exc_info=True)
         raise LLMConnectionError(f"LLM invocation failed: {exc}") from exc
@@ -152,7 +152,7 @@ async def generate_answer(state: AgenticRAGState) -> dict:
     user_msg = HumanMessage(content=question)
 
     try:
-        response = await model.ainvoke([system_msg, context_msg, user_msg])
+        response = await get_model().ainvoke([system_msg, context_msg, user_msg])
     except Exception as exc:
         logger.error("LLM invocation failed in generate_answer: %s", exc, exc_info=True)
         raise GenerationError(f"Answer generation failed: {exc}") from exc
@@ -169,7 +169,7 @@ async def rewrite_question(state: AgenticRAGState) -> dict:
     prompt_text = prompt_template.replace("{question}", question)
 
     try:
-        response = await model.ainvoke(
+        response = await get_model().ainvoke(
             [HumanMessage(content=prompt_text)]
         )
     except Exception as exc:
@@ -205,7 +205,7 @@ async def summary_node(state: AgenticRAGState) -> dict:
     messages = list(state["messages"]) + [summary_prompt]
 
     try:
-        response = await model.ainvoke(messages)
+        response = await get_model().ainvoke(messages)
     except Exception as exc:
         logger.warning("Summary generation failed (%s) – keeping messages as-is", exc)
         return {}
@@ -236,7 +236,7 @@ async def should_continue(state: AgenticRAGState) -> str:
     prompt = get_prompt("flow_decision")
 
     try:
-        response = await model.ainvoke([
+        response = await get_model().ainvoke([
             SystemMessage(content=prompt),
             HumanMessage(content=question),
         ])
@@ -300,7 +300,7 @@ async def grade_documents(
     )
 
     try:
-        response = await model.ainvoke([HumanMessage(content=combined)])
+        response = await get_model().ainvoke([HumanMessage(content=combined)])
         score = _content_to_str(response.content).strip().lower()
     except Exception as exc:
         logger.warning("Document grading failed (%s) – defaulting to relevant", exc)
@@ -431,6 +431,36 @@ async def shutdown_checkpointer() -> None:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _sanitize_messages(messages: list) -> list:
+    """Remove orphaned ToolMessages that lack a preceding AIMessage with tool_calls.
+
+    OpenAI strictly requires every ``tool`` message to follow an ``assistant``
+    message that contains ``tool_calls``.  Ollama is lenient about this, so
+    when switching providers the persisted conversation may contain orphaned
+    tool messages.  This function strips them to prevent 400 errors.
+    """
+    tool_call_ids: set = set()
+    for msg in messages:
+        if isinstance(msg, AIMessage) and msg.tool_calls:
+            for tc in msg.tool_calls:
+                tc_id = tc.get("id") or tc.get("tool_call_id")
+                if tc_id:
+                    tool_call_ids.add(tc_id)
+
+    cleaned: list = []
+    for msg in messages:
+        if isinstance(msg, ToolMessage):
+            tc_id = getattr(msg, "tool_call_id", None)
+            if tc_id and tc_id not in tool_call_ids:
+                logger.debug("Stripped orphaned ToolMessage (tool_call_id=%s)", tc_id)
+                continue
+            if not tool_call_ids and tc_id:
+                logger.debug("Stripped ToolMessage — no tool_calls found in history")
+                continue
+        cleaned.append(msg)
+    return cleaned
 
 
 def _content_to_str(content) -> str:

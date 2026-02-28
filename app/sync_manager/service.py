@@ -301,14 +301,15 @@ class SyncManager:
             from app.core.config import settings
             from app.core.hash_database import init_hash_db
             from app.utils.hash_registry import sync_data_folder_changes
-            from app.vectorstore.vectorstore import save_vectorstore, vector_store
+            from app.vectorstore.vectorstore import vsm, save_vectorstore
 
             init_hash_db()
             results = await sync_data_folder_changes(settings.BASE_DATA_FOLDER)
 
             if results.get("chunks_added", 0) > 0 or results.get("chunks_removed", 0) > 0:
-                save_vectorstore(vector_store)
-                logger.info(f"[SYNC_MANAGER] Vectorstore saved ({vector_store.index.ntotal} chunks)")
+                save_vectorstore()
+                active = vsm.active
+                logger.info(f"[SYNC_MANAGER] Vectorstore saved ({active.index.ntotal if active else 0} chunks)")
 
             completed_at = _now_ist()
             duration = (completed_at - started_at).total_seconds()

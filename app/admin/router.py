@@ -283,7 +283,7 @@ async def view_logs(
 )
 async def get_settings(admin=Depends(require_admin)):
     from app.admin.runtime_config import rc
-    return {"settings": rc.get_all()}
+    return {"settings": rc.get_all(mask_secrets=True)}
 
 
 @router.put(
@@ -299,6 +299,131 @@ async def update_settings(body: dict, request: Request, admin=Depends(require_ad
         raise HTTPException(status_code=400, detail={"message": "Provide {\"settings\": {\"key\": \"value\", ...}}"})
 
     ip = _client_ip(request)
+
+    from app.chatbot.agent.llm import force_reinit
+    from app.vectorstore.vectorstore import vsm
+
+    embedding_keys = {"embedding_provider", "embedding_model", "embedding_api_key", "embedding_dimensions"}
+    toggle_key = "use_remote_models"
+    model_keys = {
+        toggle_key, "llm_provider", "llm_model_name",
+        "llm_base_url", "llm_api_key", "llm_temperature",
+    } | embedding_keys
+
+    changed_keys = set(updates.keys())
     count = rc.bulk_set(updates, changed_by=admin.username)
-    log_activity(admin.username, "UPDATE_SETTINGS", {"keys": list(updates.keys())}, ip)
+
+    if model_keys & changed_keys:
+        force_reinit()
+
+    if toggle_key in changed_keys:
+        new_mode = "remote" if updates[toggle_key] == "true" else "local"
+        vsm.switch_mode(new_mode)
+
+    if embedding_keys & changed_keys:
+        vsm.rebuild_status["rebuild_required"] = True
+
+    log_activity(admin.username, "UPDATE_SETTINGS", {"keys": list(changed_keys)}, ip)
     return {"message": f"{count} setting(s) updated", "updated": count}
+
+
+# ── Model Configuration ──────────────────────────────────────
+
+
+@router.get(
+    "/settings/active-model",
+    summary="Get active model configuration",
+    tags=["Admin Settings"],
+)
+async def get_active_model(admin=Depends(require_admin)):
+    from app.chatbot.agent.llm import get_active_config
+    return get_active_config()
+
+
+@router.post(
+    "/settings/test-connection",
+    summary="Test LLM and embedding model connectivity",
+    tags=["Admin Settings"],
+)
+async def test_model_connection(request: Request, admin=Depends(require_admin)):
+    """Invoke both the LLM and embedding model with a trivial input to verify connectivity."""
+    ip = _client_ip(request)
+    results: dict = {}
+
+    try:
+        from app.chatbot.agent.llm import get_model
+        llm = get_model()
+        response = await llm.ainvoke(
+            [{"role": "user", "content": "Say hello in one word."}]
+        )
+        results["llm"] = {
+            "status": "success",
+            "response": str(response.content)[:200],
+        }
+    except Exception as exc:
+        logger.warning("LLM test-connection failed: %s", exc)
+        results["llm"] = {"status": "error", "message": str(exc)[:500]}
+
+    try:
+        from app.chatbot.agent.llm import get_embeddings
+        emb = get_embeddings()
+        vector = emb.embed_query("connectivity test")
+        results["embeddings"] = {
+            "status": "success",
+            "dimensions": len(vector),
+        }
+    except Exception as exc:
+        logger.warning("Embedding test-connection failed: %s", exc)
+        results["embeddings"] = {"status": "error", "message": str(exc)[:500]}
+
+    log_activity(admin.username, "TEST_MODEL_CONNECTION", results, ip)
+    return results
+
+
+# ── Vector Store Rebuild ──────────────────────────────────────
+
+
+@router.get(
+    "/settings/rebuild-status",
+    summary="Get vector store rebuild status and index info",
+    tags=["Admin Settings"],
+)
+async def rebuild_status(admin=Depends(require_admin)):
+    from app.vectorstore.vectorstore import vsm
+    return vsm.get_status()
+
+
+@router.post(
+    "/settings/rebuild-vectorstore",
+    summary="Rebuild the vector store for the target mode",
+    tags=["Admin Settings"],
+)
+async def rebuild_vectorstore(
+    request: Request,
+    body: dict = None,
+    admin=Depends(require_admin),
+):
+    """Kick off a full vector store rebuild as a background task.
+
+    Body (optional): ``{"target_mode": "remote"}``
+    Defaults to the currently active mode.
+    """
+    from app.vectorstore.vectorstore import vsm
+
+    if vsm.rebuild_status.get("status") == "running":
+        raise HTTPException(status_code=409, detail={"message": "A rebuild is already in progress"})
+
+    target_mode = (body or {}).get("target_mode", vsm.mode)
+    if target_mode not in ("local", "remote"):
+        raise HTTPException(status_code=400, detail={"message": f"Invalid target_mode: {target_mode}"})
+
+    ip = _client_ip(request)
+    log_activity(admin.username, "REBUILD_VECTORSTORE", {"target_mode": target_mode}, ip)
+
+    import asyncio
+    asyncio.create_task(vsm.rebuild(target_mode))
+
+    return {
+        "message": f"Rebuild started for {target_mode} mode. Poll /settings/rebuild-status for progress.",
+        "target_mode": target_mode,
+    }

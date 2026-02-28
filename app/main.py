@@ -26,7 +26,7 @@ from app.filesource.router import router as filesource_router
 from app.filesource.scanner import register_filesource_scan_job
 from app.sync_manager.router import router as sync_manager_router
 from app.utils.hash_registry import sync_all_folders, load_all_files_to_vectorstore
-from app.vectorstore.vectorstore import save_vectorstore, vector_store
+from app.vectorstore.vectorstore import vsm, save_vectorstore
 
 _STATIC = Path(__file__).parent / "static"
 
@@ -47,6 +47,18 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing hash registry database...")
     init_hash_db()
 
+    # Restore the model mode from the admin panel setting
+    try:
+        from app.admin.runtime_config import rc
+        use_remote = rc.get("use_remote_models", "false").lower() == "true"
+        if use_remote:
+            logger.info("Admin setting use_remote_models=true — switching to remote mode")
+            vsm.switch_mode("remote")
+        else:
+            logger.info("Admin setting use_remote_models=false — staying in local mode")
+    except Exception as exc:
+        logger.warning("Could not read use_remote_models setting: %s — defaulting to local", exc)
+
     # Sync existing files with hash registry
     logger.info("Syncing existing files with hash registry...")
     sync_results = sync_all_folders(settings.BASE_DATA_FOLDER)
@@ -55,10 +67,10 @@ async def lifespan(app: FastAPI):
             logger.info(f"Registered {count} files from '{folder}'")
     logger.info("Hash registry ready.")
 
-    # Check if vectorstore was loaded from disk or needs population
-    if vector_store.index.ntotal == 0:
-        # Vectorstore is empty, load all files
-        logger.info("Vector store is empty. Loading all files...")
+    # Check if active vectorstore was loaded from disk or needs population
+    active_vs = vsm.active
+    if active_vs is not None and active_vs.index.ntotal == 0:
+        logger.info("Active vector store is empty. Loading all files...")
         load_results = await load_all_files_to_vectorstore(settings.BASE_DATA_FOLDER)
         total_loaded = 0
         total_chunks = 0
@@ -85,10 +97,11 @@ async def lifespan(app: FastAPI):
         logger.info(f"Vectorstore ready: {total_loaded} files, {total_chunks} chunks loaded.")
         if total_newly_processed > 0:
             logger.info(f"{total_newly_processed} files were newly processed and marked in registry")
-        # Save the newly populated vector store
-        save_vectorstore(vector_store)
+        save_vectorstore()
+    elif active_vs is not None:
+        logger.info(f"Vector store loaded from disk with {active_vs.index.ntotal} chunks.")
     else:
-        logger.info(f"Vector store loaded from disk with {vector_store.index.ntotal} chunks.")
+        logger.warning("No active vector store available — rebuild may be required.")
 
     # Start the background scheduler for periodic sync tasks
     logger.info(f"Starting background scheduler for {settings.SYNC_INTERVAL_SECONDS} seconds interval...")
@@ -121,8 +134,8 @@ async def lifespan(app: FastAPI):
     # Stop the background scheduler (stops all jobs including file-source scan)
     stop_scheduler()
 
-    logger.info("Saving vector store to disk...")
-    save_vectorstore(vector_store)
+    logger.info("Saving vector stores to disk...")
+    vsm.save_both()
 
 
 def _client_ip(request: Request) -> str:

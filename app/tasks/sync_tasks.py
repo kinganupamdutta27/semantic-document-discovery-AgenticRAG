@@ -7,7 +7,7 @@ Note: Task scheduling is now handled by APScheduler in app.core.scheduler
 import asyncio
 from app.core.config import settings
 from app.core.hash_database import init_hash_db
-from app.vectorstore.vectorstore import save_vectorstore, vector_store
+from app.vectorstore.vectorstore import save_vectorstore
 
 
 async def sync_data_folder_changes():
@@ -32,7 +32,7 @@ async def sync_data_folder_changes():
     
     # Save vectorstore if changes were made
     if results['chunks_added'] > 0 or results['chunks_removed'] > 0:
-        save_vectorstore(vector_store)
+        save_vectorstore()
     
     return results
 

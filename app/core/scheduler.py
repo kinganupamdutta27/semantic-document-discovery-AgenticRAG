@@ -6,7 +6,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from app.core.config import settings
 from app.core.hash_database import init_hash_db
 from app.core.logging import logger
-from app.vectorstore.vectorstore import save_vectorstore, vector_store
+from app.vectorstore.vectorstore import vsm, save_vectorstore
 
 
 scheduler = AsyncIOScheduler()
@@ -22,12 +22,18 @@ async def sync_data_folder_changes_job():
     3. Update hash registry and vectorstore
     """
     from app.utils.hash_registry import sync_data_folder_changes
-    
+
+    if vsm.rag_blocked:
+        logger.info("[SYNC JOB] Skipped — vector store rebuild in progress")
+        return
+    if vsm.active is None:
+        logger.info("[SYNC JOB] Skipped — no active vector store (rebuild required)")
+        return
+
     logger.info("[SYNC JOB] Starting sync_data_folder_changes...")
     logger.info(f"[SYNC JOB] Scanning folder: {settings.BASE_DATA_FOLDER}")
     
     try:
-        # Initialize hash database
         init_hash_db()
         
         # Run the async sync function
@@ -46,10 +52,11 @@ async def sync_data_folder_changes_job():
             for error in results['errors']:
                 logger.error(f"[SYNC JOB]    - {error}")
         
-        # Save vectorstore if changes were made
         if results['chunks_added'] > 0 or results['chunks_removed'] > 0:
-            save_vectorstore(vector_store)
-            logger.info(f"[SYNC JOB] Vectorstore saved with {vector_store.index.ntotal} chunks.")
+            save_vectorstore()
+            active = vsm.active
+            count = active.index.ntotal if active else 0
+            logger.info(f"[SYNC JOB] Vectorstore saved with {count} chunks.")
         logger.info("[SYNC JOB] Sync complete!")
         return results
         

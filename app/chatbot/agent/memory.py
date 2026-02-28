@@ -20,7 +20,6 @@ import json
 import logging
 from pathlib import Path
 
-from langchain_ollama import OllamaEmbeddings
 from langgraph.store.memory import InMemoryStore
 
 from app.core.config import settings
@@ -43,10 +42,8 @@ _NAMESPACE = ("memories",)
 
 def _build_embeddings():
     """Return the same embedding model used by the FAISS vectorstore."""
-    return OllamaEmbeddings(
-        model=settings.EMBEDDING_MODEL,
-        base_url=settings.LLM_BASE_URL,
-    )
+    from app.chatbot.agent.llm import get_embeddings
+    return get_embeddings()
 
 
 async def init_memory_store() -> InMemoryStore:
@@ -85,10 +82,10 @@ async def init_memory_store() -> InMemoryStore:
 
     try:
         from langmem import create_memory_store_manager
-        from app.chatbot.agent.llm import model as llm_model
+        from app.chatbot.agent.llm import get_model
 
         _memory_manager = create_memory_store_manager(
-            llm_model,
+            get_model(),
             namespace=_NAMESPACE,
             store=_store,
             instructions=(

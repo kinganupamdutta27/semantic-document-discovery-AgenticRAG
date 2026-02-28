@@ -6,7 +6,6 @@ from langchain.tools import tool
 
 from app.admin.runtime_config import rc
 from app.chatbot.exceptions import RetrievalError
-from app.vectorstore.vectorstore import vector_store
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +20,35 @@ def retrieve_documents(query: str) -> str:
     Use this tool whenever the user asks a question that may be answered by
     the uploaded documents.  Pass a concise, keyword-rich search query.
     """
+    from app.vectorstore.vectorstore import vsm
+
+    if vsm.rag_blocked:
+        rebuild_st = vsm.rebuild_status.get("status", "")
+        if rebuild_st == "running":
+            progress = vsm.rebuild_status.get("progress", 0)
+            total = vsm.rebuild_status.get("total", 0)
+            return (
+                "The knowledge base is currently being rebuilt with a new embedding model "
+                f"(progress: {progress}/{total}). Please wait a few minutes and try again."
+            )
+        return (
+            f"The knowledge base index for {vsm.mode} mode has not been built yet. "
+            "An admin needs to go to the Settings page (/chat/admin/settings) and click "
+            "'Rebuild Vector Store' to create the index before document search can work."
+        )
+
+    vs = vsm.active
+    if vs is None:
+        return (
+            f"The knowledge base index for {vsm.mode} mode is not available. "
+            "An admin needs to go to the Settings page (/chat/admin/settings) and click "
+            "'Rebuild Vector Store' to create the index before document search can work."
+        )
+
     k = rc.get_int("rag_retrieval_k", _DEFAULT_K)
     min_score = _DEFAULT_MIN_SCORE
     try:
-        raw_results = vector_store.similarity_search_with_score(query, k=k)
+        raw_results = vs.similarity_search_with_score(query, k=k)
     except Exception as exc:
         logger.error("Vector-store retrieval failed: %s", exc, exc_info=True)
         raise RetrievalError(f"Vector-store retrieval failed: {exc}") from exc

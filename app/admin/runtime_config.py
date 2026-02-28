@@ -66,13 +66,30 @@ _DEFAULTS: List[dict] = [
         "description": "Maximum allowed k for the search endpoint",
         "value_type": "int",
     },
-    # ── LLM ──
+    # ── Model Provider Toggle ──
+    {
+        "key": "use_remote_models",
+        "value": "false",
+        "category": "llm",
+        "label": "Use Remote Models",
+        "description": "Switch between local (Ollama/.env) and remote (OpenAI, Anthropic, etc.) models",
+        "value_type": "boolean",
+    },
+    # ── LLM Configuration ──
+    {
+        "key": "llm_provider",
+        "value": "openai",
+        "category": "llm",
+        "label": "LLM Provider",
+        "description": "Remote LLM provider (used when remote models are enabled)",
+        "value_type": "select",
+    },
     {
         "key": "llm_model_name",
         "value": "",
         "category": "llm",
         "label": "LLM Model Name",
-        "description": "Ollama model name (empty = use .env default)",
+        "description": "Model name for the LLM (e.g. gpt-4o-mini, llama3.1:8b). Empty = provider default. Overrides .env in both modes.",
         "value_type": "string",
     },
     {
@@ -80,16 +97,57 @@ _DEFAULTS: List[dict] = [
         "value": "",
         "category": "llm",
         "label": "LLM Base URL",
-        "description": "Ollama server URL (empty = use .env default)",
+        "description": "Ollama server URL for local mode (empty = use .env default)",
         "value_type": "string",
+    },
+    {
+        "key": "llm_api_key",
+        "value": "",
+        "category": "llm",
+        "label": "LLM API Key",
+        "description": "API key for the selected remote LLM provider",
+        "value_type": "secret",
+    },
+    {
+        "key": "llm_temperature",
+        "value": "",
+        "category": "llm",
+        "label": "LLM Temperature",
+        "description": "Response temperature (0.0 = deterministic, 1.0 = creative, empty = provider default)",
+        "value_type": "string",
+    },
+    # ── Embedding Configuration ──
+    {
+        "key": "embedding_provider",
+        "value": "openai",
+        "category": "llm",
+        "label": "Embedding Provider",
+        "description": "Remote embedding provider (used when remote models are enabled)",
+        "value_type": "select",
     },
     {
         "key": "embedding_model",
         "value": "",
         "category": "llm",
-        "label": "Embedding Model",
-        "description": "Embedding model name (empty = use .env default)",
+        "label": "Embedding Model Name",
+        "description": "Model name for embeddings (e.g. text-embedding-3-small, nomic-embed-text). Empty = provider default. Overrides .env in both modes.",
         "value_type": "string",
+    },
+    {
+        "key": "embedding_api_key",
+        "value": "",
+        "category": "llm",
+        "label": "Embedding API Key",
+        "description": "API key for the remote embedding provider (leave empty to reuse the LLM API key)",
+        "value_type": "secret",
+    },
+    {
+        "key": "embedding_dimensions",
+        "value": "",
+        "category": "llm",
+        "label": "Embedding Dimensions",
+        "description": "Vector dimensions (empty = model default). Changing this requires rebuilding the vector store!",
+        "value_type": "int",
     },
     # ── Document Processing ──
     {
@@ -178,6 +236,9 @@ _DEFAULTS: List[dict] = [
 ]
 
 
+_SECRET_KEYS = frozenset({"llm_api_key", "embedding_api_key"})
+
+
 class _RuntimeConfigCache:
     """In-memory cache backed by the runtime_settings table."""
 
@@ -213,21 +274,31 @@ class _RuntimeConfigCache:
         except ValueError:
             return fallback
 
-    def get_all(self) -> List[dict]:
+    def get_all(self, mask_secrets: bool = True) -> List[dict]:
         self._ensure_loaded()
-        return [
-            {
+        items = []
+        for s in self._cache.values():
+            value = s.value
+            if mask_secrets and s.key in _SECRET_KEYS and value:
+                value = self._mask_value(value)
+            items.append({
                 "key": s.key,
-                "value": s.value,
+                "value": value,
                 "category": s.category,
                 "label": s.label,
                 "description": s.description,
                 "value_type": s.value_type,
                 "updated_at": s.updated_at.isoformat() if s.updated_at else None,
                 "updated_by": s.updated_by,
-            }
-            for s in self._cache.values()
-        ]
+            })
+        return items
+
+    @staticmethod
+    def _mask_value(val: str) -> str:
+        """Return a masked representation like '••••••abcd'."""
+        if len(val) <= 4:
+            return "••••••••"
+        return "••••••" + val[-4:]
 
     def set(self, key: str, value: str, changed_by: str = "system") -> None:
         session = get_admin_session()
@@ -254,6 +325,11 @@ class _RuntimeConfigCache:
                 row = session.get(RuntimeSetting, key)
                 if row is None:
                     continue
+                if key in _SECRET_KEYS and value:
+                    if not value.startswith("••"):
+                        value = self._encrypt_value(value)
+                    else:
+                        continue
                 row.value = value
                 row.updated_at = datetime.now(timezone.utc)
                 row.updated_by = changed_by
@@ -264,6 +340,16 @@ class _RuntimeConfigCache:
             return count
         finally:
             session.close()
+
+    @staticmethod
+    def _encrypt_value(plaintext: str) -> str:
+        """Encrypt a value using the application's Fernet key."""
+        try:
+            from app.filesource.crypto import encrypt
+            return encrypt(plaintext)
+        except Exception as exc:
+            logger.warning("Encryption failed, storing value as-is: %s", exc)
+            return plaintext
 
 
 rc = _RuntimeConfigCache()

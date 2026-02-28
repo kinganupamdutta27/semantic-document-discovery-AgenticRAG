@@ -15,7 +15,7 @@ from app.utils.hash_registry import (
 )
 from app.utils.document_converstion import process_file
 from app.vectorstore.operations import add_documents
-from app.vectorstore.vectorstore import save_vectorstore, vector_store
+from app.vectorstore.vectorstore import vsm, save_vectorstore
 
 
 router = APIRouter()
@@ -167,7 +167,7 @@ async def create_upload_file(
                     await add_documents(chunks)
                     # Persist immediately to reduce data loss window on crash/restart.
                     try:
-                        await asyncio.to_thread(save_vectorstore, vector_store)
+                        await asyncio.to_thread(save_vectorstore)
                     except Exception as persist_error:
                         logger.warning(
                             "Vectorstore persistence failed after upload '%s': %s",

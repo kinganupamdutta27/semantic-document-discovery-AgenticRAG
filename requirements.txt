@@ -47,6 +47,14 @@ pypdf
 langchain-text-splitters
 langmem
 
+# Remote LLM / Embedding providers (install only what you need)
+langchain-openai
+langchain-anthropic
+langchain-google-genai
+langchain-groq
+langchain-mistralai
+langchain-huggingface
+
 # Multi-format document loaders
 docx2txt
 openpyxl

@@ -21,12 +21,12 @@
         .setting-label strong { font-size: 13px; display: block; margin-bottom: 2px; }
         .setting-label small { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
         .setting-input { flex: 1; }
-        .setting-input input, .setting-input textarea {
+        .setting-input input, .setting-input textarea, .setting-input select {
             width: 100%; padding: 9px 12px; border: 2px solid var(--border);
             border-radius: 8px; font-size: 13px; font-family: inherit;
-            transition: border-color .2s;
+            transition: border-color .2s; background: #fff;
         }
-        .setting-input input:focus, .setting-input textarea:focus {
+        .setting-input input:focus, .setting-input textarea:focus, .setting-input select:focus {
             outline: none; border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(102,126,234,.12);
         }
@@ -40,7 +40,107 @@
             justify-content: flex-end; gap: 12px; align-items: center;
         }
         .save-bar .status { font-size: 13px; color: var(--text-muted); }
-        .badge-category { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: #edf2f7; color: var(--text-muted); margin-left: 8px; }
+
+        /* Toggle switch */
+        .toggle-wrapper { display: flex; align-items: center; gap: 12px; padding: 4px 0; }
+        .toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+        .toggle input { opacity: 0; width: 0; height: 0; }
+        .toggle .slider {
+            position: absolute; inset: 0; background: #cbd5e0; border-radius: 24px;
+            cursor: pointer; transition: background .25s;
+        }
+        .toggle .slider::before {
+            content: ''; position: absolute; width: 18px; height: 18px;
+            left: 3px; bottom: 3px; background: #fff; border-radius: 50%;
+            transition: transform .25s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+        }
+        .toggle input:checked + .slider { background: var(--primary); }
+        .toggle input:checked + .slider::before { transform: translateX(20px); }
+        .toggle-label { font-size: 13px; font-weight: 600; color: var(--text); }
+
+        /* Secret field */
+        .secret-wrapper { position: relative; }
+        .secret-wrapper input { padding-right: 38px; }
+        .secret-toggle {
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; cursor: pointer; font-size: 15px;
+            color: var(--text-muted); padding: 2px;
+        }
+        .secret-toggle:hover { color: var(--text); }
+
+        /* Mode banner */
+        .mode-banner {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 18px; border-radius: 10px; margin-bottom: 18px;
+            font-size: 13px; font-weight: 600; transition: all .3s;
+        }
+        .mode-banner.local { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; }
+        .mode-banner.remote { background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; }
+        .mode-banner .mode-icon { font-size: 20px; }
+        .mode-banner .mode-info { flex: 1; }
+        .mode-banner .mode-info small { font-weight: 400; display: block; margin-top: 2px; opacity: .8; }
+
+        /* Sub-section headers inside LLM category */
+        .sub-section-header {
+            font-size: 12px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .5px; color: var(--primary-dark, #5a67d8);
+            margin: 18px 0 6px 0; padding: 8px 12px;
+            background: linear-gradient(90deg, rgba(102,126,234,.08), transparent);
+            border-left: 3px solid var(--primary); border-radius: 0 6px 6px 0;
+        }
+        .sub-section-header:first-child { margin-top: 8px; }
+
+        /* Test connection */
+        .test-bar {
+            display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+            padding: 14px 0; border-top: 2px solid var(--border); margin-top: 8px;
+        }
+        .test-result {
+            font-size: 12px; padding: 6px 12px; border-radius: 6px; display: none;
+        }
+        .test-result.success { display: inline-block; background: #f0fff4; color: #276749; }
+        .test-result.error { display: inline-block; background: #fff5f5; color: #c53030; }
+
+        /* Disabled overlay for remote fields when local mode */
+        .remote-fields.disabled { opacity: .45; pointer-events: none; }
+
+        /* Rebuild section */
+        .rebuild-banner {
+            padding: 14px 18px; border-radius: 10px; margin: 12px 0;
+            font-size: 13px; display: none;
+        }
+        .rebuild-banner.warning {
+            display: flex; align-items: center; gap: 10px;
+            background: #fffbeb; color: #92400e; border: 1px solid #fcd34d;
+        }
+        .rebuild-banner.running {
+            display: flex; align-items: center; gap: 10px;
+            background: #eff6ff; color: #1e40af; border: 1px solid #93c5fd;
+        }
+        .rebuild-banner.error {
+            display: flex; align-items: center; gap: 10px;
+            background: #fff5f5; color: #c53030; border: 1px solid #feb2b2;
+        }
+        .rebuild-banner.done {
+            display: flex; align-items: center; gap: 10px;
+            background: #f0fff4; color: #276749; border: 1px solid #c6f6d5;
+        }
+        .rebuild-progress {
+            width: 100%; height: 6px; background: #e2e8f0;
+            border-radius: 3px; margin-top: 8px; overflow: hidden;
+        }
+        .rebuild-progress-bar {
+            height: 100%; background: var(--primary); border-radius: 3px;
+            transition: width .3s; width: 0%;
+        }
+        .index-info {
+            display: flex; gap: 16px; margin: 8px 0; font-size: 12px; color: var(--text-muted);
+        }
+        .index-info .badge-index {
+            padding: 3px 10px; border-radius: 12px; font-weight: 600; font-size: 11px;
+        }
+        .badge-index.available { background: #f0fff4; color: #276749; }
+        .badge-index.missing { background: #fff5f5; color: #c53030; }
     </style>
 </head>
 <body>
@@ -77,17 +177,75 @@
     "use strict";
 
     var SETTINGS_API = "/chat/admin/api/settings";
+    var TEST_API = "/chat/admin/api/settings/test-connection";
+    var ACTIVE_MODEL_API = "/chat/admin/api/settings/active-model";
+    var REBUILD_API = "/chat/admin/api/settings/rebuild-vectorstore";
+    var REBUILD_STATUS_API = "/chat/admin/api/settings/rebuild-status";
     var allSettings = [];
+    var _rebuildPollTimer = null;
 
-    var CATEGORY_ORDER = ["retrieval", "llm", "processing", "prompts", "sync"];
+    var CATEGORY_ORDER = ["llm", "retrieval", "processing", "prompts", "sync"];
     var CATEGORY_LABELS = {
+        llm: "LLM & Embedding Configuration",
         retrieval: "Retrieval & Search",
-        llm: "LLM Configuration",
         processing: "Document Processing",
         prompts: "System Prompts",
         sync: "Synchronization",
         general: "General",
     };
+
+    var SELECT_OPTIONS = {
+        llm_provider: [
+            { value: "openai",      label: "OpenAI" },
+            { value: "anthropic",   label: "Anthropic" },
+            { value: "google-genai",label: "Google GenAI" },
+            { value: "groq",        label: "Groq" },
+            { value: "mistralai",   label: "Mistral AI" },
+            { value: "ollama",      label: "Ollama (Remote)" }
+        ],
+        embedding_provider: [
+            { value: "openai",      label: "OpenAI" },
+            { value: "ollama",      label: "Ollama" },
+            { value: "google-genai",label: "Google GenAI" },
+            { value: "huggingface", label: "HuggingFace (Local)" }
+        ]
+    };
+
+    var DEFAULT_LLM_MODELS = {
+        "openai": "gpt-4o-mini",
+        "anthropic": "claude-3-5-sonnet-20241022",
+        "google-genai": "gemini-1.5-flash",
+        "groq": "llama-3.1-70b-versatile",
+        "mistralai": "mistral-large-latest",
+        "ollama": "llama3.1:8b"
+    };
+
+    var DEFAULT_EMBEDDING_MODELS = {
+        "openai": "text-embedding-3-small",
+        "ollama": "nomic-embed-text:latest",
+        "google-genai": "models/embedding-001",
+        "huggingface": "sentence-transformers/all-MiniLM-L6-v2"
+    };
+
+    var DEFAULT_EMBEDDING_DIMS = {
+        "openai": "1536",
+        "ollama": "768",
+        "google-genai": "768",
+        "huggingface": "384"
+    };
+
+    var REMOTE_ONLY_KEYS = new Set([
+        "llm_provider", "llm_api_key", "llm_temperature",
+        "embedding_provider", "embedding_api_key", "embedding_dimensions"
+    ]);
+
+    var LLM_SECTION_KEYS = [
+        "llm_provider", "llm_model_name", "llm_api_key", "llm_temperature"
+    ];
+    var EMBEDDING_SECTION_KEYS = [
+        "embedding_provider", "embedding_model", "embedding_api_key", "embedding_dimensions"
+    ];
+    var SHARED_KEYS = ["llm_base_url"];
 
     function showToast(msg, type) {
         var t = document.getElementById("toast");
@@ -107,6 +265,61 @@
         } catch (e) { console.error(e); }
     }
 
+    function isRemoteEnabled() {
+        var el = document.getElementById("s_use_remote_models");
+        return el && el.checked;
+    }
+
+    function updateRemoteFieldsState() {
+        var enabled = isRemoteEnabled();
+        var container = document.getElementById("remoteFields");
+        if (container) {
+            container.classList.toggle("disabled", !enabled);
+        }
+        var banner = document.getElementById("modeBanner");
+        if (banner) {
+            if (enabled) {
+                banner.className = "mode-banner remote";
+                banner.innerHTML =
+                    '<span class="mode-icon">&#9729;</span>' +
+                    '<div class="mode-info">Remote Mode Active' +
+                    '<small>Using remote provider &mdash; configure provider, model name, and API key below</small></div>';
+            } else {
+                banner.className = "mode-banner local";
+                banner.innerHTML =
+                    '<span class="mode-icon">&#9881;</span>' +
+                    '<div class="mode-info">Local Mode Active (Ollama)' +
+                    '<small>Using .env defaults &mdash; you can still override model name and base URL below</small></div>';
+            }
+        }
+        var toggleLbl = document.getElementById("toggleLabel_use_remote_models");
+        if (toggleLbl) toggleLbl.textContent = enabled ? "ON" : "OFF";
+    }
+
+    function onLLMProviderChange() {
+        var sel = document.getElementById("s_llm_provider");
+        if (!sel) return;
+        var provider = sel.value;
+        var modelInput = document.getElementById("s_llm_model_name");
+        if (modelInput) {
+            modelInput.placeholder = DEFAULT_LLM_MODELS[provider] || "model name";
+        }
+    }
+
+    function onEmbeddingProviderChange() {
+        var sel = document.getElementById("s_embedding_provider");
+        if (!sel) return;
+        var provider = sel.value;
+        var modelInput = document.getElementById("s_embedding_model");
+        if (modelInput) {
+            modelInput.placeholder = DEFAULT_EMBEDDING_MODELS[provider] || "model name";
+        }
+        var dimsInput = document.getElementById("s_embedding_dimensions");
+        if (dimsInput) {
+            dimsInput.placeholder = DEFAULT_EMBEDDING_DIMS[provider] || "dimensions";
+        }
+    }
+
     function renderSettings() {
         var grouped = {};
         allSettings.forEach(function (s) {
@@ -119,25 +332,17 @@
         CATEGORY_ORDER.forEach(function (cat) {
             var items = grouped[cat];
             if (!items) return;
+
             html += '<div class="settings-category">';
             html += '<h3>' + (CATEGORY_LABELS[cat] || cat) + '</h3>';
-            items.forEach(function (s) {
-                html += '<div class="setting-row">';
-                html += '<div class="setting-label"><strong>' + esc(s.label || s.key) + '</strong>';
-                html += '<small>' + esc(s.description) + '</small></div>';
-                html += '<div class="setting-input">';
-                if (s.value_type === "text") {
-                    html += '<textarea id="s_' + s.key + '" data-key="' + s.key + '">' + esc(s.value) + '</textarea>';
-                } else {
-                    var type = s.value_type === "int" ? "number" : "text";
-                    html += '<input type="' + type + '" id="s_' + s.key + '" data-key="' + s.key + '" value="' + esc(s.value) + '">';
-                }
-                html += '<div class="hint">Key: <code>' + s.key + '</code>';
-                if (s.updated_by && s.updated_by !== "system") {
-                    html += ' &middot; Last changed by <strong>' + esc(s.updated_by) + '</strong>';
-                }
-                html += '</div></div></div>';
-            });
+
+            if (cat === "llm") {
+                html += renderLLMCategory(items);
+            } else {
+                items.forEach(function (s) {
+                    html += renderSettingRow(s);
+                });
+            }
             html += '</div>';
         });
 
@@ -146,16 +351,141 @@
                 var items = grouped[cat];
                 html += '<div class="settings-category"><h3>' + (CATEGORY_LABELS[cat] || cat) + '</h3>';
                 items.forEach(function (s) {
-                    html += '<div class="setting-row"><div class="setting-label"><strong>' + esc(s.label || s.key) + '</strong>';
-                    html += '<small>' + esc(s.description) + '</small></div>';
-                    html += '<div class="setting-input"><input type="text" id="s_' + s.key + '" data-key="' + s.key + '" value="' + esc(s.value) + '">';
-                    html += '</div></div>';
+                    html += renderSettingRow(s);
                 });
                 html += '</div>';
             }
         });
 
         document.getElementById("settingsCard").innerHTML = html || '<p style="text-align:center;padding:30px;color:var(--text-muted)">No settings found.</p>';
+
+        updateRemoteFieldsState();
+        onLLMProviderChange();
+        onEmbeddingProviderChange();
+    }
+
+    function renderLLMCategory(items) {
+        var itemMap = {};
+        items.forEach(function (s) { itemMap[s.key] = s; });
+
+        var html = "";
+
+        html += '<div id="modeBanner" class="mode-banner local"></div>';
+
+        if (itemMap["use_remote_models"]) {
+            html += renderToggleRow(itemMap["use_remote_models"]);
+        }
+
+        html += '<div id="remoteFields" class="remote-fields">';
+
+        html += '<div class="sub-section-header">LLM Provider Settings</div>';
+        ["llm_provider", "llm_api_key", "llm_temperature"].forEach(function (key) {
+            if (itemMap[key]) html += renderSettingRow(itemMap[key]);
+        });
+
+        html += '<div class="sub-section-header">Embedding Provider Settings</div>';
+        ["embedding_provider", "embedding_api_key", "embedding_dimensions"].forEach(function (key) {
+            if (itemMap[key]) html += renderSettingRow(itemMap[key]);
+        });
+
+        html += '</div>';
+
+        html += '<div class="sub-section-header">Model Names & Server</div>';
+        ["llm_model_name", "embedding_model", "llm_base_url"].forEach(function (key) {
+            if (itemMap[key]) html += renderSettingRow(itemMap[key]);
+        });
+
+        html += '<div id="rebuildBanner" class="rebuild-banner"></div>';
+        html += '<div id="indexInfo" class="index-info"></div>';
+
+        html += '<div class="test-bar">';
+        html += '<button class="btn btn-success" id="btnTest" onclick="testConnection()">Test Connection</button>';
+        html += '<button class="btn btn-danger" id="btnRebuild" onclick="confirmRebuild()">Rebuild Vector Store</button>';
+        html += '<span class="test-result" id="testLLM"></span>';
+        html += '<span class="test-result" id="testEmb"></span>';
+        html += '</div>';
+
+        return html;
+    }
+
+    function renderToggleRow(s) {
+        var checked = s.value === "true" ? "checked" : "";
+        var html = '<div class="setting-row">';
+        html += '<div class="setting-label"><strong>' + esc(s.label || s.key) + '</strong>';
+        html += '<small>' + esc(s.description) + '</small></div>';
+        html += '<div class="setting-input"><div class="toggle-wrapper">';
+        html += '<label class="toggle">';
+        html += '<input type="checkbox" id="s_' + s.key + '" data-key="' + s.key + '" ' + checked + ' onchange="updateRemoteFieldsState()">';
+        html += '<span class="slider"></span>';
+        html += '</label>';
+        html += '<span class="toggle-label" id="toggleLabel_' + s.key + '">' + (checked ? "ON" : "OFF") + '</span>';
+        html += '</div></div></div>';
+        return html;
+    }
+
+    function renderSettingRow(s) {
+        var html = '<div class="setting-row">';
+        html += '<div class="setting-label"><strong>' + esc(s.label || s.key) + '</strong>';
+        html += '<small>' + esc(s.description) + '</small></div>';
+        html += '<div class="setting-input">';
+
+        if (s.value_type === "boolean") {
+            var checked = s.value === "true" ? "checked" : "";
+            html += '<div class="toggle-wrapper">';
+            html += '<label class="toggle">';
+            html += '<input type="checkbox" id="s_' + s.key + '" data-key="' + s.key + '" ' + checked + '>';
+            html += '<span class="slider"></span>';
+            html += '</label>';
+            html += '<span class="toggle-label">' + (checked ? "ON" : "OFF") + '</span>';
+            html += '</div>';
+        } else if (s.value_type === "select" && SELECT_OPTIONS[s.key]) {
+            var onchangeAttr = "";
+            if (s.key === "llm_provider") onchangeAttr = ' onchange="onLLMProviderChange()"';
+            if (s.key === "embedding_provider") onchangeAttr = ' onchange="onEmbeddingProviderChange()"';
+            html += '<select id="s_' + s.key + '" data-key="' + s.key + '"' + onchangeAttr + '>';
+            SELECT_OPTIONS[s.key].forEach(function (opt) {
+                var sel = opt.value === s.value ? ' selected' : '';
+                html += '<option value="' + opt.value + '"' + sel + '>' + esc(opt.label) + '</option>';
+            });
+            html += '</select>';
+        } else if (s.value_type === "secret") {
+            var displayVal = s.value || "";
+            html += '<div class="secret-wrapper">';
+            html += '<input type="password" id="s_' + s.key + '" data-key="' + s.key + '" value="' + esc(displayVal) + '" placeholder="Enter API key...">';
+            html += '<button type="button" class="secret-toggle" onclick="toggleSecret(this)" title="Show/hide">&#128065;</button>';
+            html += '</div>';
+        } else if (s.value_type === "text") {
+            html += '<textarea id="s_' + s.key + '" data-key="' + s.key + '">' + esc(s.value) + '</textarea>';
+        } else {
+            var type = s.value_type === "int" ? "number" : "text";
+            var placeholder = getPlaceholder(s.key);
+            html += '<input type="' + type + '" id="s_' + s.key + '" data-key="' + s.key + '" value="' + esc(s.value) + '"' + (placeholder ? ' placeholder="' + esc(placeholder) + '"' : '') + '>';
+        }
+
+        html += '<div class="hint">Key: <code>' + s.key + '</code>';
+        if (s.updated_by && s.updated_by !== "system") {
+            html += ' &middot; Last changed by <strong>' + esc(s.updated_by) + '</strong>';
+        }
+        html += '</div></div></div>';
+        return html;
+    }
+
+    function getPlaceholder(key) {
+        if (key === "llm_model_name") return DEFAULT_LLM_MODELS["openai"] || "";
+        if (key === "embedding_model") return DEFAULT_EMBEDDING_MODELS["openai"] || "";
+        if (key === "embedding_dimensions") return DEFAULT_EMBEDDING_DIMS["openai"] || "";
+        return "";
+    }
+
+    function toggleSecret(btn) {
+        var inp = btn.parentElement.querySelector("input");
+        if (inp.type === "password") {
+            inp.type = "text";
+            btn.innerHTML = "&#128064;";
+        } else {
+            inp.type = "password";
+            btn.innerHTML = "&#128065;";
+        }
     }
 
     function esc(s) {
@@ -173,8 +503,19 @@
         allSettings.forEach(function (s) {
             var el = document.getElementById("s_" + s.key);
             if (!el) return;
-            var newVal = el.value;
-            if (newVal !== s.value) {
+
+            var newVal;
+            if (s.value_type === "boolean") {
+                newVal = el.checked ? "true" : "false";
+            } else {
+                newVal = el.value;
+            }
+
+            if (s.value_type === "secret") {
+                if (newVal && !newVal.startsWith("\u2022\u2022")) {
+                    updates[s.key] = newVal;
+                }
+            } else if (newVal !== s.value) {
                 updates[s.key] = newVal;
             }
         });
@@ -202,7 +543,136 @@
         }
     }
 
+    async function testConnection() {
+        var btn = document.getElementById("btnTest");
+        var llmEl = document.getElementById("testLLM");
+        var embEl = document.getElementById("testEmb");
+        btn.disabled = true; btn.textContent = "Testing...";
+        llmEl.className = "test-result"; llmEl.textContent = "";
+        embEl.className = "test-result"; embEl.textContent = "";
+
+        try {
+            var res = await ADMIN_AUTH.adminFetch(TEST_API, { method: "POST" });
+            var data = await res.json();
+
+            if (data.llm) {
+                if (data.llm.status === "success") {
+                    llmEl.className = "test-result success";
+                    llmEl.textContent = "LLM: OK \u2014 " + (data.llm.response || "").substring(0, 80);
+                } else {
+                    llmEl.className = "test-result error";
+                    llmEl.textContent = "LLM: Failed \u2014 " + (data.llm.message || "Unknown error").substring(0, 120);
+                }
+            }
+            if (data.embeddings) {
+                if (data.embeddings.status === "success") {
+                    embEl.className = "test-result success";
+                    embEl.textContent = "Embeddings: OK \u2014 " + data.embeddings.dimensions + " dims";
+                } else {
+                    embEl.className = "test-result error";
+                    embEl.textContent = "Embeddings: Failed \u2014 " + (data.embeddings.message || "Unknown error").substring(0, 120);
+                }
+            }
+        } catch (e) {
+            llmEl.className = "test-result error";
+            llmEl.textContent = "Connection test failed: " + e.message;
+        } finally {
+            btn.disabled = false; btn.textContent = "Test Connection";
+        }
+    }
+
+    async function pollRebuildStatus() {
+        try {
+            var res = await ADMIN_AUTH.adminFetch(REBUILD_STATUS_API);
+            if (!res.ok) return;
+            var data = await res.json();
+            renderRebuildStatus(data);
+        } catch (e) { console.error("rebuild-status poll error", e); }
+    }
+
+    function renderRebuildStatus(data) {
+        var banner = document.getElementById("rebuildBanner");
+        var infoEl = document.getElementById("indexInfo");
+        if (!banner) return;
+
+        var rb = data.rebuild || {};
+        var rag = data.rag_blocked;
+
+        if (rb.status === "running") {
+            var pct = rb.total > 0 ? Math.round((rb.progress / rb.total) * 100) : 0;
+            banner.className = "rebuild-banner running";
+            banner.innerHTML =
+                '<strong>Rebuilding...</strong> ' + esc(rb.message || "") +
+                '<div class="rebuild-progress"><div class="rebuild-progress-bar" style="width:' + pct + '%"></div></div>';
+            startRebuildPoll();
+        } else if (rb.status === "error") {
+            banner.className = "rebuild-banner error";
+            banner.innerHTML = '<strong>Rebuild Failed:</strong> ' + esc(rb.message || "Unknown error");
+            stopRebuildPoll();
+        } else if (rb.rebuild_required || (rag && rb.status !== "completed")) {
+            banner.className = "rebuild-banner warning";
+            banner.innerHTML =
+                '<strong>Rebuild Required</strong> \u2014 Embedding settings changed. ' +
+                'Click "Rebuild Vector Store" to re-index all documents with the new model.';
+            stopRebuildPoll();
+        } else if (rb.status === "completed") {
+            banner.className = "rebuild-banner done";
+            banner.innerHTML = '<strong>Rebuild Complete:</strong> ' + esc(rb.message || "Done");
+            stopRebuildPoll();
+        } else {
+            banner.className = "rebuild-banner";
+            banner.style.display = "none";
+            stopRebuildPoll();
+        }
+
+        if (infoEl) {
+            var localInfo = data.local || {};
+            var remoteInfo = data.remote || {};
+            infoEl.innerHTML =
+                '<span>Local index: <span class="badge-index ' + (localInfo.available ? "available" : "missing") + '">' +
+                (localInfo.available ? localInfo.chunks + " chunks (" + localInfo.dims + "d)" : "not built") +
+                '</span></span>' +
+                '<span>Remote index: <span class="badge-index ' + (remoteInfo.available ? "available" : "missing") + '">' +
+                (remoteInfo.available ? remoteInfo.chunks + " chunks (" + remoteInfo.dims + "d)" : "not built") +
+                '</span></span>' +
+                '<span>Active: <strong>' + esc(data.mode || "local") + '</strong></span>';
+        }
+    }
+
+    function startRebuildPoll() {
+        if (_rebuildPollTimer) return;
+        _rebuildPollTimer = setInterval(pollRebuildStatus, 2000);
+    }
+    function stopRebuildPoll() {
+        if (_rebuildPollTimer) { clearInterval(_rebuildPollTimer); _rebuildPollTimer = null; }
+    }
+
+    async function confirmRebuild() {
+        var mode = isRemoteEnabled() ? "remote" : "local";
+        if (!confirm("This will rebuild the entire " + mode + " vector store index.\n\nAll documents will be re-embedded with the " + mode + " embedding model. RAG queries will be blocked until the rebuild completes.\n\nContinue?")) return;
+
+        var btn = document.getElementById("btnRebuild");
+        btn.disabled = true; btn.textContent = "Starting...";
+
+        try {
+            var res = await ADMIN_AUTH.adminFetch(REBUILD_API, {
+                method: "POST",
+                body: JSON.stringify({ target_mode: mode }),
+            });
+            var data = await res.json();
+            if (!res.ok) { showToast(data.detail?.message || data.message || "Failed", "error"); return; }
+            showToast(data.message, "success");
+            startRebuildPoll();
+            pollRebuildStatus();
+        } catch (e) {
+            showToast("Rebuild request failed: " + e.message, "error");
+        } finally {
+            btn.disabled = false; btn.textContent = "Rebuild Vector Store";
+        }
+    }
+
     setTimeout(loadSettings, 400);
+    setTimeout(pollRebuildStatus, 600);
     </script>
 </body>
 </html>
